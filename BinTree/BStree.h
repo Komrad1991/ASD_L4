@@ -13,6 +13,7 @@
 #include <initializer_list>
 #include <functional>
 #include <exception>
+#include <algorithm>
 
 template<typename T, class Compare = std::less<T>, class Allocator = std::allocator<T>>
 class Binary_Search_Tree
@@ -157,8 +158,8 @@ public:
 	protected:
 		//  Указатель на узел дерева
 		Node* data;
-
-		explicit iterator(Node* d) : data(d) {	}
+		Node* dummy;
+		explicit iterator(Node* d, Node* dum) : data(d), dummy(dum) {	}
 		
 		//  Указатель на узел дерева
 		inline Node* &_data()
@@ -169,35 +170,55 @@ public:
 		//  Родительский узел дерева
 		inline iterator Parent() const noexcept
 		{
-			throw std::exception("Not implemented!");
+			return data->parent;
 		}
 		//  Левый дочерний узел (если отсутствует, то фиктивная вершина)
 		inline iterator Left() const noexcept
 		{
-			throw std::exception("Not implemented!");
+				return iterator(data->left, dummy);
 		}
 		//  Правый дочерний узел (если отсутствует, то фиктивная вершина)
 		inline iterator Right() const noexcept
 		{
-			throw std::exception("Not implemented!");
+			return iterator(data->right,dummy);
 		}
 		//  Является ли узел дерева левым у своего родителя
 		inline bool IsLeft() const noexcept
 		{
-			throw std::exception("Not implemented!");
+			//if (data->parent == dummy) return false;
+			if (data->parent)
+			{
+				return data->parent->left == data;
+			}
+			else return false;
 		}
 		//  Является ли узел дерева правым у своего родителя
 		inline bool IsRight() const noexcept
 		{
-			throw std::exception("Not implemented!");
+			//if (data->parent == dummy) return false;
+			if (data->parent)
+			{
+				return data->parent->right == data;
+			}
+			else return false;
 		}
 		//  Поиск «самого левого» элемента
 		iterator GetMin() {
-			throw std::exception("Not implemented!");
+			Node* l = data->left;
+			if (l)
+			{
+				while (l->left != dummy) l = l->left;
+			}
+			return iterator(l,dummy);
 		}
 		//  Поиск «самого правого» элемента
 		iterator GetMax() {
-			throw std::exception("Not implemented!");
+			Node* r = data->right;
+			if (r)
+			{
+				while (r->right != dummy) r = r->right;
+			}
+			return iterator(r,dummy);
 		}
 	public:
 		//  Определяем стандартные типы в соответствии с требованиями стандарта к двунаправленным итераторам
@@ -208,7 +229,7 @@ public:
 		using reference = Binary_Search_Tree::reference;
 
 		//  Значение в узле, на который указывает итератор
-		inline const T& operator*() const
+		inline T& operator*() const
 		{
 			return data->data;
 		}
@@ -216,32 +237,82 @@ public:
 		//  Преинкремент - следующий элемент множества
 		iterator & operator++()
 		{
-			throw std::exception("Not implemented!");
+			if (data == dummy)
+			{
+				return *this;
+			}
+
+			if (data == dummy->right)
+			{
+				data = dummy;
+				return *this;
+			}
+
+			if (data->right != dummy)
+			{
+				data = data->right;
+				while (data->left != dummy)
+					data = data->left;
+			}
+			else
+			{
+				Node* parent = data->parent;
+				while (parent != dummy && data == parent->right)
+				{
+					data = parent;
+					parent = parent->parent;
+				}
+				data = parent;
+			}
+
 			return *this;
 		}
 		//  Предекремент - переход на предыдущий элемент множества
-		iterator & operator--()
+		iterator& operator--()
 		{
-			throw std::exception("Not implemented!");
+			if (data == dummy) {
+				data = dummy->right;
+				return *this;
+			}
+
+			if (data->left != dummy) {
+				data = data->left;
+				while (data->right != dummy) {
+					data = data->right;
+				}
+			}
+			else {
+				Node* parent = data->parent;
+				while (parent != dummy && data == parent->left) {
+					data = parent;
+					parent = parent->parent;
+				}
+				data = parent;
+			}
+
 			return *this;
 		}
 		//  Постинкремент
 		iterator operator++(int) {
-			throw std::exception("Not implemented!");
+			auto tmp = *this;
+			++(*this);
+			return tmp;
 		}
 		//  Постдекремент
 		iterator operator--(int) {
-			throw std::exception("Not implemented!");
+			auto tmp = *this;
+			--(*this);
+			return tmp;
 		}
 
 		friend bool operator != (const iterator & it_1, const iterator & it_2)
 		{
-			throw std::exception("Not implemented!");
+			return !(it_1 == it_2);
 		}
 
 		friend bool operator == (const iterator & it_1, const iterator & it_2)
 		{
-			throw std::exception("Not implemented!");
+			return it_1.data == it_2.data;
 		}
 		
 		//  Эти операции не допускаются между прямыми и обратными итераторами
@@ -251,11 +322,11 @@ public:
 		iterator(const reverse_iterator& it) = delete;
 	};
 	
-	iterator begin() const noexcept { return iterator(dummy->left);	}
-	iterator end() const noexcept { return iterator(dummy);  }
+	iterator begin() const noexcept { return iterator(dummy->left, dummy);	}
+	iterator end() const noexcept { return iterator(dummy, dummy);  }
 
-	reverse_iterator rbegin() const	noexcept { return reverse_iterator(iterator(dummy->right)); }
-	reverse_iterator rend() const noexcept { return reverse_iterator(iterator(dummy)); }
+	reverse_iterator rbegin() const	noexcept { return reverse_iterator(iterator(dummy,dummy)); }
+	reverse_iterator rend() const noexcept { return reverse_iterator(iterator(dummy->left, dummy)); }
 
 	Binary_Search_Tree(Compare comparator = Compare(), AllocType alloc = AllocType())
 		: dummy(make_dummy()), cmp(comparator), Alc(alloc) {}
@@ -286,14 +357,27 @@ public:
 	template <class InputIterator>
 	Binary_Search_Tree(InputIterator first, InputIterator last, Compare comparator = Compare(), AllocType alloc = AllocType()) : dummy(make_dummy()), cmp(comparator), Alc(alloc)
 	{
-		//  Проверка - какой вид итераторов нам подали на вход
-		if (std::is_same<typename std::iterator_traits<InputIterator>::iterator_category, typename std::random_access_iterator_tag>::value) {
-			//  Если итератор произвольного доступа, то есть надежда, что диапазон отсортирован
-			//    а даже если и нет - не важно, всё равно попробуем метод деления пополам для вставки
-			ordered_insert(first, last, end());
+		using IteratorCategory = typename std::iterator_traits<InputIterator>::iterator_category;
+
+		//if constexpr (std::is_same_v<IteratorCategory, std::random_access_iterator_tag>) {
+		//	// Если итератор произвольного доступа, используем ordered_insert
+		//	ordered_insert(first, last, end());
+		//}
+		//else 
+		if constexpr (std::is_same_v<IteratorCategory, std::bidirectional_iterator_tag>) {
+			// Если итератор двунаправленный (включая reverse_iterator), преобразуем его
+			auto base_first = first.base();
+			auto base_last = last.base();
+			while (base_first != base_last) {
+				insert(*base_first);
+				++base_first;
+			}
 		}
-		else
-			std::for_each(first, last, [this](T x) { insert(x); });
+		else 
+		{
+			// Для остальных типов итераторов используем последовательную вставку
+			std::for_each(first, last, [this](const T& x) { insert(x); });
+		}
 	}
 
 	Binary_Search_Tree(const Binary_Search_Tree & tree) : dummy(make_dummy())
@@ -305,8 +389,13 @@ public:
 		dummy->parent->parent = dummy;
 
 		//  Осталось установить min и max
-		dummy->left = iterator(dummy->parent).GetMin()._data();
-		dummy->right = iterator(dummy->parent).GetMax()._data();
+		Node* r = dummy->parent->right;
+		Node* l = dummy->parent->left;
+		while (r->right != dummy) r = r->right;
+		while (l->left != dummy) l = l->left;
+		
+		dummy->left = l;
+		dummy->right = r;
 	}
 
 	private:
@@ -359,18 +448,96 @@ public:
 		std::swap(tree_size, other.tree_size);
 	}
 
+	std::pair<iterator, bool> insert(const T& value) {
+		T temp = value; // Создаем временную копию
+		return insert(std::move(temp)); // Перемещаем временную копию
+	}
 	//  Вставка элемента по значению. 
-	std::pair<iterator, bool> insert(const T & value)
+	std::pair<iterator, bool> insert(T && value)
 	{
-		throw std::exception("Not implemented!");
-		//return std::make_pair(iterator(new_node), true);
+		Node* head = dummy->parent;
+		Node* new_node = make_node(std::move(value),nullptr,dummy,dummy);
+		if (head == dummy)
+		{
+			new_node->parent = dummy;
+			new_node->left = dummy;
+			new_node->right = dummy;
+			dummy->parent = new_node;
+			dummy->left = new_node;
+			dummy->right = new_node;
+			tree_size++;
+			return std::make_pair(iterator(new_node,dummy), true);
+		}
+		else
+		{
+			Node* prev = head;
+			while (head != dummy)
+			{
+				if (cmp(new_node->data, head->data))
+				{
+					prev = head;
+					head = head->left;
+				}
+				else
+				{
+					if (!cmp(head->data, new_node->data)) return std::make_pair(iterator(head,dummy), false);
+					prev = head;
+					head = head->right;
+				}
+			}
+			if (cmp(new_node->data, prev->data))
+			{
+				prev->left = new_node;
+				new_node->parent = prev;
+				if (dummy->left == prev) dummy->left = new_node;
+			}
+			else
+			{
+				prev->right = new_node;
+				new_node->parent = prev;
+				if (dummy->right == prev) dummy->right = new_node;
+			}
+			++tree_size;
+			return std::make_pair(iterator(new_node,dummy), true);
+		}
 	}	
 
 	iterator insert(const_iterator position, const value_type& x) {
-		//  Проверяем, корректно ли задана позиция для вставки: ... prev -> x -> position -> ...
-		//  2 5 6 7 10 11 15,    x = 8
-		throw std::exception("Not implemented!");
-		//  Всё???
+		if (empty()) {
+			Node* new_node = make_node(x, dummy, dummy, dummy);
+			dummy->parent = new_node;
+			dummy->left = new_node;
+			dummy->right = new_node;
+			++tree_size;
+			return iterator(new_node, dummy);
+		}
+		if (position == begin()) {
+			if (!cmp(x, *position)) {
+				return insert(x).first;
+			}
+		}
+		else {
+			auto prev_it = --position;
+			if (!(cmp(*prev_it, x) && cmp(x, *position))) {
+				return insert(x).first;
+			}
+		}
+		Node* parent = position.data->parent;
+		Node* new_node = make_node(x, parent, dummy, dummy);
+		if (position.IsLeft()) {
+			parent->left = new_node;
+		}
+		else {
+			parent->right = new_node;
+		}
+		if (dummy->left == parent && cmp(x, parent->data)) {
+			dummy->left = new_node;
+		}
+		if (dummy->right == parent && !cmp(x, parent->data)) {
+			dummy->right = new_node;
+		}
+		++tree_size;
+		return iterator(new_node, dummy);
 	}
 
 	//  Не самый лучший вариант.
@@ -381,17 +548,35 @@ public:
 
 	iterator find(const value_type& value) const {
 		
-		iterator current = iterator(dummy->parent);
-
-		throw std::exception("Not implemented!");
+		iterator current = iterator(dummy->parent,dummy);
+		while (current.data != dummy)
+		{
+			if (cmp(value,*current))
+				current = current.Left();
+			else
+			{
+				if (!cmp(*current,value)) return current;
+				current = current.Right();
+			}
+		}
 		return current;
 	}
 
 	iterator lower_bound(const value_type& key) {
-		iterator current{ dummy->parent }, result{ dummy->parent };
+		Node* current = dummy->parent;
+		Node* result = dummy; 
 
-		throw std::exception("Not implemented!");
-		return result;
+		while (current != dummy) {
+			if (!cmp(current->data, key)) {
+				result = current;
+				current = current->left;
+			}
+			else {
+				current = current->right;
+			}
+		}
+
+		return iterator(result, dummy);
 	}
 
 	const_iterator lower_bound(const value_type& key) const {
@@ -399,8 +584,20 @@ public:
 	}
 
 	iterator upper_bound(const value_type& key) {
+		Node* current = dummy->parent;
+		Node* result = dummy; 
 
-		throw std::exception("Not implemented!");
+		while (current != dummy) {
+			if (cmp(key, current->data)) {
+				result = current;
+				current = current->left;
+			}
+			else {
+				current = current->right;
+			}
+		}
+
+		return iterator(result, dummy);
 	}
 
 	const_iterator upper_bound(const value_type& key) const {
@@ -412,16 +609,22 @@ public:
 	}
 
 	std::pair<const_iterator, const_iterator> equal_range(const value_type& key) const {
-		throw std::exception("Not implemented!");
+		return { lower_bound(key), upper_bound(key) };
 	}
 
 protected:
 	//  Удаление листа дерева. Возвращает количество удалённых элементов
 	size_type delete_leaf(iterator leaf) {
 		#ifdef _DEBUG
-		if (leaf.isNil()) return 0; // Стоит потом убрать, так как уже проверяем, что итератор валидный в erase
+		//if (leaf.isNil()) return 0; // Стоит потом убрать, так как уже проверяем, что итератор валидный в erase
 		#endif
-		throw std::exception("Not implemented!");
+		Node* p = leaf.data->parent;
+		if (leaf.IsLeft())
+		{
+			p->left = dummy;
+		}
+		else p->right = dummy;
+		delete_node(leaf.data);
 		return 1;
 	}
 
@@ -432,30 +635,104 @@ protected:
 
 		//  Находим максимальный элемент слева. У него нет правого дочернего, и он не может быть корнем или самым правым
 		iterator left_max = node.Left().GetMax();
+		//if (left_max == dummy->right || left_max == dummy->parent) return node;
+		Node* l = left_max.data;
+		Node* n = node.data;
+		if (node.IsLeft())
+		{
+			n->parent->left = l;
+		}
+		else if (node.IsRight())
+		{
+			n->parent->right = l;
+		}
 
-		throw std::exception("Not implemented!");
+		l->left = n->left;
+		l->right = n->right;
+		if (n->left != dummy) n->left->parent = l;
+		if (n->right != dummy) n->right->parent = l;
+		n->left = dummy;
+		n->right = dummy;
+		Node* lp = l->parent;
+		lp->right = n;
+		l->parent = n->parent;
+		n->parent = lp;
+
 		return node;
 	} 	
-
 
 public:
 	//  Удаление элемента, заданного итератором. Возвращает количество удалённых элементов (для set - 0/1)
 	iterator erase(iterator elem) {
-		//  Если фиктивный элемент, то ошибка - такого не должно происходить
-		if (elem.isNil()) return iterator(elem);
-		
-		throw std::exception("Not implemented!");
-		replace_with_max_left(elem);
+		if (elem == iterator(dummy, dummy)) {
+			return end();
+		}
 
-		return erase(elem);
+		Node* node = elem.data;
+		Node* parent = node->parent;
+		auto temp = ++elem;
+
+		if (node->left == dummy && node->right == dummy) {
+			if (parent->left == node) {
+				parent->left = dummy;
+			}
+			else {
+				parent->right = dummy;
+			}
+			if (dummy->left == node) dummy->left = parent;
+			if (dummy->right == node) dummy->right = parent;
+			if (dummy->parent == node) dummy->parent = dummy;
+		}
+		else if (node->left == dummy) {
+			Node* right_child = node->right;
+			if (parent->left == node) {
+				parent->left = right_child;
+			}
+			else {
+				parent->right = right_child;
+			}
+			right_child->parent = parent;
+			if (dummy->left == node) dummy->left = right_child;
+			if (dummy->parent == node) dummy->parent = right_child;
+		}
+		else if (node->right == dummy) {
+			Node* left_child = node->left;
+			if (parent->left == node) {
+				parent->left = left_child;
+			}
+			else {
+				parent->right = left_child;
+			}
+			left_child->parent = parent;
+			if (dummy->right == node) dummy->right = left_child;
+			if (dummy->parent == node) dummy->parent = left_child;
+		}
+		else {
+			elem = replace_with_max_left(elem);
+			node = elem.data;
+			parent = node->parent;
+
+			if (parent->left == node) {
+				parent->left = dummy;
+			}
+			else {
+				parent->right = dummy;
+			}
+		}
+
+		delete_node(node);
+		--tree_size;
+
+		return temp;
 	}
 	
 	size_type erase(const value_type& elem) {
 		iterator it = find(elem);
-		if (it.isNil())
-			return 0;
-		erase(it);
-		return 1;
+		if (it != end()) {
+			erase(it);
+			return 1;
+		}
+		return 0;
 	}
 	
 	//  Проверить!!!

@@ -1,5 +1,5 @@
 ﻿#include "CppUnitTest.h"
-#include "..\BinTree\BStree.h"
+#include "../BinTree/BStree.h"
 #include <set>
 #include <functional>
 #include <memory_resource>
@@ -27,8 +27,9 @@ namespace TreeTest
 
 		//  Для того, чтобы выполнить тестирование одного из указанных контейнеров (std::set или Binary_Tree_Search)
 		//    должна быть раскомментирована одна из следующих строк:
+		
 		template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
-		//template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
+		template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
 
 		TEST_METHOD(TreeSizeTest)
 		{
@@ -81,8 +82,8 @@ namespace TreeTest
 
 		//  Для того, чтобы выполнить тестирование одного из указанных контейнеров (std::set или Binary_Tree_Search)
 		//    должна быть раскомментирована одна из следующих строк:
-		template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
-		//template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
+		//template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
+		template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
 
 		using Mycont = ContainerTemplate<char>;
 
@@ -431,8 +432,8 @@ namespace TreeTest
 
 		//  Для того, чтобы выполнить тестирование одного из указанных контейнеров (std::set или Binary_Tree_Search)
 		//    должна быть раскомментирована одна из следующих строк:
-		template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
-		//template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
+		//template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
+		template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
 
 
 		TEST_METHOD(StringTests)
