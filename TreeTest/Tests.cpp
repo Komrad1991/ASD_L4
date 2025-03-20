@@ -28,8 +28,8 @@ namespace TreeTest
 		//  Для того, чтобы выполнить тестирование одного из указанных контейнеров (std::set или Binary_Tree_Search)
 		//    должна быть раскомментирована одна из следующих строк:
 		
-		template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
-		//template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
+		//template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
+		template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
 
 		TEST_METHOD(TreeSizeTest)
 		{
@@ -200,7 +200,7 @@ namespace TreeTest
 			Assert::IsTrue(v0.empty());
 			v0.swap(v1);
 			Assert::IsTrue(!v0.empty() && v1.empty());
-			ошибкаv0.swap(v1);
+			std::swap(v0,v1);
 			Assert::IsTrue(v0.empty() && !v1.empty());
 			Assert::IsTrue(v1 == v1 && v0 < v1, L"Сравнение множеств некорректно!");
 			Assert::IsTrue(v0 != v1 && v1 > v0, L"Сравнение множеств некорректно!");
