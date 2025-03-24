@@ -14,6 +14,8 @@
 #include <functional>
 #include <exception>
 #include <algorithm>
+#include <fstream>
+#include <string>
 
 template<typename T, class Compare = std::less<T>, class Allocator = std::allocator<T>>
 class Binary_Search_Tree
@@ -35,9 +37,10 @@ class Binary_Search_Tree
 		Node* parent;
 		Node* left;
 		Node* right;
+		bool color;
 		//  Хранимый в узле ключ
 		T data;
-		Node(T value = T(), Node* p = nullptr, Node* l = nullptr, Node* r = nullptr) : parent(p), data(value), left(l), right(r) {}
+		Node(T value = T(), Node* p = nullptr, Node* l = nullptr, Node* r = nullptr,bool c = false) : parent(p), data(value), left(l), right(r),color(c) {}
 	};
 
 	//  Стандартные контейнеры позволяют указать пользовательский аллокатор, который используется для
@@ -107,6 +110,9 @@ private:
 
 		std::allocator_traits<AllocType>::construct(Alc, &(dummy->right));
 		dummy->right = dummy;
+
+		std::allocator_traits<AllocType>::construct(Alc, &(dummy->color));
+		dummy->color = true;
 		
 		//  Возвращаем указатель на созданную вершину
 		return dummy;
@@ -114,7 +120,7 @@ private:
 
 	// Создание узла дерева 
 	template <typename T>
-	inline Node* make_node(T&& elem, Node * parent, Node* left, Node* right)
+	inline Node* make_node(T&& elem, Node * parent, Node* left, Node* right, bool color)
 	{
 		// Создаём точно так же, как и фиктивную вершину, только для поля данных нужно вызвать конструктор
 		Node * new_node = Alc.allocate(1);
@@ -129,6 +135,9 @@ private:
 		std::allocator_traits<AllocType>::construct(Alc, &(new_node->right));
 		new_node->right = right;
 
+		std::allocator_traits<AllocType>::construct(Alc, &(new_node->color));
+		new_node->color = color;
+
 		//  Конструируем поле данных
 		std::allocator_traits<AllocType>::construct(Alc, &(new_node->data), std::forward<T>(elem));
 
@@ -141,6 +150,7 @@ private:
 		std::allocator_traits<AllocType>::destroy(Alc, &(node->parent));
 		std::allocator_traits<AllocType>::destroy(Alc, &(node->left));
 		std::allocator_traits<AllocType>::destroy(Alc, &(node->right));
+		std::allocator_traits<AllocType>::destroy(Alc, &(node->color));
 		std::allocator_traits<AllocType>::deallocate(Alc, node, 1);
 	}
 	
@@ -176,7 +186,7 @@ public:
 		//  Левый дочерний узел (если отсутствует, то фиктивная вершина)
 		inline iterator Left() const noexcept
 		{
-				return iterator(data->left, dummy);
+			return iterator(data->left, dummy);
 		}
 		//  Правый дочерний узел (если отсутствует, то фиктивная вершина)
 		inline iterator Right() const noexcept
@@ -355,25 +365,7 @@ public:
 	template <class InputIterator>
 	Binary_Search_Tree(InputIterator first, InputIterator last, Compare comparator = Compare(), AllocType alloc = AllocType()) : dummy(make_dummy()), cmp(comparator), Alc(alloc)
 	{
-		//using IteratorCategory = typename std::iterator_traits<InputIterator>::iterator_category;
-
-		////if constexpr (std::is_same_v<IteratorCategory, std::random_access_iterator_tag>) {
-		////	// Если итератор произвольного доступа, используем ordered_insert
-		////	ordered_insert(first, last, end());
-		////}
-		////else 
-		//if constexpr (std::is_same_v<IteratorCategory, std::bidirectional_iterator_tag>) {
-		//	auto base_first = first.base();
-		//	auto base_last = last.base();
-		//	while (base_first != base_last) {
-		//		insert(*base_first);
-		//		++base_first;
-		//	}
-		//}
-		//else 
-		//{
 			std::for_each(first, last, [this](const T& x) { insert(x); });
-		//}
 	}
 
 	Binary_Search_Tree(const Binary_Search_Tree & tree) : dummy(make_dummy())
@@ -388,30 +380,6 @@ public:
 		dummy->left = iterator(dummy->parent,dummy).GetMin()._data();
 		dummy->right = iterator(dummy->parent,dummy).GetMax()._data();
 	}
-
-	//Binary_Search_Tree(Binary_Search_Tree&& other): dummy(other.dummy), tree_size(other.tree_size), cmp(std::move(other.cmp)), Alc(std::move(other.Alc)) {
-	//	
-	//	other.dummy = make_dummy();  
-	//	other.tree_size = 0;         
-	//}
-
-	//Binary_Search_Tree& operator=(Binary_Search_Tree&& other) 
-	//{
-	//	if (this != &other) {
-	//		
-	//		clear();
-	//		delete_dummy(dummy);
-
-	//		dummy = other.dummy;
-	//		tree_size = other.tree_size;
-	//		cmp = std::move(other.cmp);
-	//		Alc = std::move(other.Alc);
-
-	//		other.dummy = make_dummy();
-	//		other.tree_size = 0;
-	//	}
-	//	return *this;
-	//}
 
 	private:
 
@@ -432,7 +400,7 @@ public:
 			right_sub_tree = dummy;
 		
 		//  Теперь создаём собственный узел
-		Node* current = make_node(source->data, nullptr, left_sub_tree, right_sub_tree);
+		Node* current = make_node(source->data, nullptr, left_sub_tree, right_sub_tree,source->color);
 		//  Устанавливаем родителей
 		if (source->right != source_dummy)
 			current->right->parent = current;
@@ -458,20 +426,41 @@ public:
 	// Обмен содержимым двух контейнеров
 	void swap(Binary_Search_Tree & other) noexcept {
 		std::swap(dummy, other.dummy);
-
-		//  Обмен размера множеств
 		std::swap(tree_size, other.tree_size);
 	}
 
+	void saveToFile(std::string fileName)
+	{
+		std::ofstream file{fileName};
+		if (dummy->parent != dummy)
+		{
+			Node* root = dummy->parent;
+			file << root->data;
+			std::queue<Node*> q;
+			if (root->left != dummy) q.push(root->left);
+			if (root->right != dummy) q.push(root->right);
+			while (!q.empty())
+			{
+				Node* cur = q.front();
+				q.pop();
+				file << " " << cur->data;
+				if (cur->left != dummy) q.push(cur->left);
+				if (cur->right != dummy) q.push(cur->right);
+			}
+		}
+	}
+
+	
+
 	iterator insert(const T& value) {
-		T temp = value; // Создаем временную копию
-		return insert(std::move(temp)); // Перемещаем временную копию
+		T temp = value; 
+		return insert(std::move(temp)); 
 	}
 	//  Вставка элемента по значению. 
 	iterator insert(T && value)
 	{
 		Node* head = dummy->parent;
-		Node* new_node = make_node(std::move(value),nullptr,dummy,dummy);
+		Node* new_node = make_node(std::move(value),nullptr,dummy,dummy,false);
 		if (head == dummy)
 		{
 			new_node->parent = dummy;
@@ -495,7 +484,6 @@ public:
 				}
 				else
 				{
-					//if (!cmp(head->data, new_node->data)) return std::make_pair(iterator(head,dummy), false);
 					prev = head;
 					head = head->right;
 				}
@@ -513,13 +501,14 @@ public:
 				if (dummy->right == prev) dummy->right = new_node;
 			}
 			++tree_size;
+			fixUp(new_node);
 			return iterator(new_node, dummy);
 		}
 	}	
 
 	iterator insert(const_iterator position, const value_type& x) {
 		if (empty()) {
-			Node* new_node = make_node(x, dummy, dummy, dummy);
+			Node* new_node = make_node(x, dummy, dummy, dummy,false);
 			dummy->parent = new_node;
 			dummy->left = new_node;
 			dummy->right = new_node;
@@ -528,17 +517,17 @@ public:
 		}
 		if (position == begin()) {
 			if (!cmp(x, *position)) {
-				return insert(x).first;
+				return insert(x);
 			}
 		}
 		else {
 			auto prev_it = --position;
 			if (!(cmp(*prev_it, x) && cmp(x, *position))) {
-				return insert(x).first;
+				return insert(x);
 			}
 		}
 		Node* parent = position.data->parent;
-		Node* new_node = make_node(x, parent, dummy, dummy);
+		Node* new_node = make_node(x, parent, dummy, dummy,false);
 		if (position.IsLeft()) {
 			parent->left = new_node;
 		}
@@ -552,7 +541,223 @@ public:
 			dummy->right = new_node;
 		}
 		++tree_size;
+		fixUp(new_node);
 		return iterator(new_node, dummy);
+	}
+
+	//false - red, true - black
+	void fixUp(Node* node)
+	{
+		int rotateCount = 0;
+		while (!node->parent->color)
+		{
+			if (node->parent == node->parent->parent->left)
+			{
+				Node* y = node->parent->parent->right;
+				if (!y->color)
+				{
+					node->parent->color = true;
+					y->color = true;
+					node->parent->parent->color = false;
+					node = node->parent->parent;
+				}
+				else 
+				{
+					if (node == node->parent->right)
+					{
+						node = node->parent;
+						rotateCount++;
+						leftRotate(node);
+					}
+					node->parent->color = true;
+					node->parent->parent->color = false;
+					rotateCount++;
+					rightRotate(node->parent->parent);
+				}
+			}
+			else
+			{
+				Node* y = node->parent->parent->left;
+				if (!y->color)
+				{
+					node->parent->color = true;
+					y->color = true;
+					node->parent->parent->color = false;
+					node = node->parent->parent;
+				}
+				else 
+				{
+					if (node == node->parent->left)
+					{
+						node = node->parent;
+						rotateCount++;
+						rightRotate(node);
+					}
+					node->parent->color = true;
+					node->parent->parent->color = false;
+					rotateCount++;
+					leftRotate(node->parent->parent);
+				}
+			}
+			dummy->color = true;
+			dummy->parent->color = true;
+		}
+		std::cout << "RotatesNum: " << rotateCount << std::endl;
+	}
+
+	void fixDelete(Node* x) 
+	{
+		int rotateCount = 0;
+		while (x != dummy->parent && x->color) {
+			if (x == x->parent->left) {
+				Node* w = x->parent->right;
+				if (!w->color) {
+					w->color = true;
+					x->parent->color = false;
+					rotateCount++;
+					leftRotate(x->parent);
+					w = x->parent->right;
+				}
+
+				if (w->left->color && w->right->color) 
+				{
+					w->color = false;
+					x = x->parent;
+				}
+				else 
+				{
+					if (w->right->color) 
+					{
+						w->left->color = true;
+						w->color = false;
+						rotateCount++;
+						rightRotate(w);
+						w = x->parent->right;
+					}
+
+					w->color = x->parent->color;
+					x->parent->color = true;
+					w->right->color = true;
+					rotateCount++;
+					leftRotate(x->parent);
+					x = dummy->parent;
+				}
+			}
+			else 
+			{
+				Node* w = x->parent->left;
+				if (!w->color) {
+					w->color = true;
+					x->parent->color = false;
+					rotateCount++;
+					rightRotate(x->parent);
+					w = x->parent->left;
+				}
+
+				if (w->right->color && w->left->color) 
+				{
+					w->color = false;
+					x = x->parent;
+				}
+				else 
+				{
+					if (w->left->color) 
+					{
+						w->right->color = true;
+						w->color = false;
+						rotateCount++;
+						leftRotate(w);
+						w = x->parent->left;
+					}
+
+					w->color = x->parent->color;
+					x->parent->color = true;
+					w->left->color = true;
+					rotateCount++;
+					rightRotate(x->parent);
+					x = dummy->parent;
+				}
+			}
+		}
+		x->color = true;
+		std::cout << "RotatesNum: " << rotateCount << std::endl;
+	}
+
+	void rightRotate(Node* node)
+	{
+		Node* y = node->left;
+		node->left = y->right;
+
+		if (y->right != dummy)
+		{
+			y->right->parent = node;
+		}
+
+		y->parent = node->parent;
+
+		if (node->parent == dummy)
+		{
+			dummy->parent = y;
+		}
+		else if (node == node->parent->right)
+		{
+			node->parent->right = y;
+		}
+		else
+		{
+			node->parent->left = y;
+		}
+
+		y->right = node;
+		node->parent = y;
+	}
+
+	void leftRotate(Node* node)
+	{
+		Node* y = node->right;
+		node->right = y->left;
+
+		if (y->left != dummy)
+		{
+			y->left->parent = node;
+		}
+		y->parent = node->parent;
+		if (node->parent == dummy)
+		{
+			dummy->parent = y;
+		}
+		else if (node == node->parent->left)
+		{
+			node->parent->left = y;
+		}
+		else
+		{
+			node->parent->right = y;
+		}
+		y->left = node;
+		node->parent = y;
+	}
+
+	void printTreeSideways(Node* node, const std::string& prefix = "", bool isLeft = false) {
+		if (node == dummy) {
+			std::cout << prefix << (isLeft ? "+-- " : "+-- ") << "dummy" << std::endl;
+			return;
+		}
+
+		std::cout << prefix;
+		std::cout << (isLeft ? "+-- " : "+-- ");
+		std::cout << node->data << (node->color ? " (b)" : " (r)") << std::endl;
+
+		printTreeSideways(node->left, prefix + (isLeft ? "|   " : "    "), true);
+		printTreeSideways(node->right, prefix + (isLeft ? "|   " : "    "), false);
+	}
+
+	void printTree() {
+		if (dummy->parent == dummy) {
+			std::cout << "Tree is empty" << std::endl;
+			return;
+		}
+		printTreeSideways(dummy->parent);
 	}
 
 	//  Не самый лучший вариант.
@@ -564,7 +769,7 @@ public:
 	iterator find(const value_type& value) const {
 		
 		iterator current = iterator(dummy->parent,dummy);
-		while (current.data != dummy)
+		while (current != end())
 		{
 			if (cmp(value,*current))
 				current = current.Left();
@@ -678,76 +883,106 @@ protected:
 
 public:
 	//  Удаление элемента, заданного итератором. Возвращает количество удалённых элементов (для set - 0/1)
-	iterator erase(iterator elem) {
-		if (elem == iterator(dummy, dummy)) {
+	iterator erase(iterator elem) 
+	{
+		if (elem == end()) {
 			return end();
 		}
 
 		Node* node = elem.data;
 		Node* parent = node->parent;
-		auto temp = ++elem;
+		bool needFix = node->color;
+		iterator next = ++iterator(node, dummy);
 
-		if (node->left == dummy && node->right == dummy) {
-			if (parent->left == node) {
-				parent->left = dummy;
+		if (node->left != dummy && node->right != dummy) {
+			iterator left_max = iterator(node->left, dummy).GetMax();
+			Node* replacement = left_max.data;
+			bool replacement_original_color = replacement->color;
+
+			if (parent != dummy) {
+				if (node == parent->left) {
+					parent->left = replacement;
+				}
+				else {
+					parent->right = replacement;
+				}
 			}
 			else {
-				parent->right = dummy;
+				dummy->parent = replacement;
 			}
-			if (dummy->left == node) dummy->left = parent;
-			if (dummy->right == node) dummy->right = parent;
-			if (dummy->parent == node) dummy->parent = dummy;
-		}
-		else if (node->left == dummy) {
-			Node* right_child = node->right;
-			if (parent->left == node) {
-				parent->left = right_child;
+
+			replacement->parent = parent;
+			replacement->color = node->color;
+
+			if (replacement != node->left) {
+				replacement->parent->right = replacement->left;
+				if (replacement->left != dummy) {
+					replacement->left->parent = replacement->parent;
+				}
+				replacement->left = node->left;
+				node->left->parent = replacement;
 			}
-			else {
-				parent->right = right_child;
+
+			replacement->right = node->right;
+			node->right->parent = replacement;
+
+			if (dummy->left == node) {
+				dummy->left = iterator(replacement, dummy).GetMin().data;
 			}
-			right_child->parent = parent;
-			if (dummy->left == node) dummy->left = right_child;
-			if (dummy->parent == node) dummy->parent = right_child;
-		}
-		else if (node->right == dummy) {
-			Node* left_child = node->left;
-			if (parent->left == node) {
-				parent->left = left_child;
+			if (dummy->right == node) {
+				dummy->right = iterator(replacement, dummy).GetMax().data;
 			}
-			else {
-				parent->right = left_child;
-			}
-			left_child->parent = parent;
-			if (dummy->right == node) dummy->right = left_child;
-			if (dummy->parent == node) dummy->parent = left_child;
+
+			needFix = replacement_original_color;
 		}
 		else {
-			elem = replace_with_max_left(elem);
-			node = elem.data;
-			parent = node->parent;
+			Node* child = (node->left != dummy) ? node->left : node->right;
 
-			if (parent->left == node) {
-				parent->left = dummy;
+			if (parent != dummy) {
+				if (node == parent->left) {
+					parent->left = child;
+				}
+				else {
+					parent->right = child;
+				}
 			}
 			else {
-				parent->right = dummy;
+				dummy->parent = child;
+			}
+
+			if (child != dummy) {
+				child->parent = parent;
+			}
+
+			if (dummy->left == node) {
+				dummy->left = (child != dummy) ? iterator(child, dummy).GetMin().data : parent;
+			}
+			if (dummy->right == node) {
+				dummy->right = (child != dummy) ? iterator(child, dummy).GetMax().data : parent;
 			}
 		}
 
 		delete_node(node);
 		--tree_size;
 
-		return temp;
+		if (needFix && next != end()) {
+			fixDelete(next.data);
+		}
+
+		return next;
 	}
 	
 	size_type erase(const value_type& elem) {
 		iterator it = find(elem);
-		if (it != end()) {
+		size_type res = 0;
+
+		while (it != end())
+		{
 			erase(it);
-			return 1;
+			++res;
+			it = find(elem);
 		}
-		return 0;
+		return res;
 	}
 	
 	//  Проверить!!!
@@ -846,6 +1081,20 @@ bool operator<=(const Binary_Search_Tree<Key, Compare, Allocator>& x, const Bina
 	return   !(y < x);
 }
 
-
+Binary_Search_Tree<std::string> uploadFromFile(std::string fileName)
+{
+	std::ifstream file;
+	Binary_Search_Tree<std::string> res;
+	file.open(fileName);
+	if (!file.fail())
+	{
+		std::string word;
+		while (file >> word)
+		{
+			res.insert(word);
+		}
+	}
+	return res;
+}
 
 

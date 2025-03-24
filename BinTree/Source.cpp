@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <set>
 #include <iterator>
 #include <vector>
@@ -7,6 +7,7 @@
 #include <iterator>
 #include <random>
 #include "BStree.h"
+#include <windows.h>
 
 using namespace std;
 
@@ -28,7 +29,6 @@ void print(InputIter first, InputIter last) {
 }
 
 int main() {
-
 	const size_t sz = 15;
 	vector<int> v;
 	v.reserve(sz);
@@ -146,6 +146,37 @@ int main() {
 	std::swap(S1, S2);
 	std::cout << S1.dummy->left->data << std::endl;
 	std::cout << S2.dummy->left->data << std::endl;
+	cout << " -------------------------------- \n";
+	{
+		char carr[] = "abc", carr2[] = "def";
+		Binary_Search_Tree<char> v0;
+		Binary_Search_Tree<char> v1(carr, carr + 3);
+		v0 = v1;
+
+		v0.clear();
+		std::cout << (*v0.insert('d') == 'd') << std::endl;
+		std::cout << (*--v0.end() == 'd') << std::endl;
+		std::cout << (*v0.insert('d') == 'd') << std::endl;
+		std::cout << (v0.size() == 2) << std::endl;
+		std::cout << (*v0.insert(v0.begin(), 'e') == 'e') << std::endl;
+		v0.insert(carr, carr + 3);
+		std::cout << (v0.size() == 6 && *v0.begin() == 'a') << std::endl;
+		v0.insert(carr2, carr2 + 3);
+		std::cout << (v0.size() == 9 && *--v0.end() == 'f') << std::endl;
+		std::cout << (*v0.erase(v0.begin()) == 'b' && v0.size() == 8) << std::endl;
+		std::cout << (*v0.erase(v0.begin(), ++v0.begin()) == 'c' && v0.size() == 7) << std::endl;
+		std::cout << (v0.erase('x') == 0) << std::endl;
+		v0.printTree();
+		v0.printTree();
+		{
+			Binary_Search_Tree<std::string> v0{ "1","2", "abc","356" };
+			v0.printTree();
+			v0.saveToFile("2.txt");
+			Binary_Search_Tree<std::string> v3 = uploadFromFile("2.txt");
+			std::cout << "v3 tree" << std::endl;
+			v3.printTree();
+		}
+	}
 	#ifdef _WIN32
 		system("pause");
 	#endif //_WIN32
