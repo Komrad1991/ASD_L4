@@ -463,12 +463,12 @@ public:
 		std::swap(tree_size, other.tree_size);
 	}
 
-	std::pair<iterator, bool> insert(const T& value) {
+	iterator insert(const T& value) {
 		T temp = value; // Создаем временную копию
 		return insert(std::move(temp)); // Перемещаем временную копию
 	}
 	//  Вставка элемента по значению. 
-	std::pair<iterator, bool> insert(T && value)
+	iterator insert(T && value)
 	{
 		Node* head = dummy->parent;
 		Node* new_node = make_node(std::move(value),nullptr,dummy,dummy);
@@ -481,7 +481,7 @@ public:
 			dummy->left = new_node;
 			dummy->right = new_node;
 			tree_size++;
-			return std::make_pair(iterator(new_node,dummy), true);
+			return iterator(new_node,dummy);
 		}
 		else
 		{
@@ -495,7 +495,7 @@ public:
 				}
 				else
 				{
-					if (!cmp(head->data, new_node->data)) return std::make_pair(iterator(head,dummy), false);
+					//if (!cmp(head->data, new_node->data)) return std::make_pair(iterator(head,dummy), false);
 					prev = head;
 					head = head->right;
 				}
@@ -513,7 +513,7 @@ public:
 				if (dummy->right == prev) dummy->right = new_node;
 			}
 			++tree_size;
-			return std::make_pair(iterator(new_node,dummy), true);
+			return iterator(new_node, dummy);
 		}
 	}	
 
