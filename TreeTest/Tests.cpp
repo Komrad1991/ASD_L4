@@ -201,6 +201,7 @@ namespace TreeTest
 			v0.swap(v1);
 			Assert::IsTrue(!v0.empty() && v1.empty());
 			std::swap(v0, v1); //спросить
+			std::swap(v0,v1);
 			Assert::IsTrue(v0.empty() && !v1.empty());
 			Assert::IsTrue(v1 == v1 && v0 < v1, L"Сравнение множеств некорректно!");
 			Assert::IsTrue(v0 != v1 && v1 > v0, L"Сравнение множеств некорректно!");

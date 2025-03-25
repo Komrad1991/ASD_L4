@@ -85,9 +85,10 @@ public:
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 private:
+public:
 	// Указательно на фиктивную вершину
 	Node* dummy;
-
+private:
 	//  Количесто элементов в дереве
 	size_type tree_size = 0;
 
@@ -204,20 +205,14 @@ public:
 		}
 		//  Поиск «самого левого» элемента
 		iterator GetMin() {
-			Node* l = data->left;
-			if (l)
-			{
-				while (l->left != dummy) l = l->left;
-			}
+			Node* l = data;
+			while (l->left != dummy) l = l->left;
 			return iterator(l,dummy);
 		}
 		//  Поиск «самого правого» элемента
 		iterator GetMax() {
-			Node* r = data->right;
-			if (r)
-			{
-				while (r->right != dummy) r = r->right;
-			}
+			Node* r = data;
+			while (r->right != dummy) r = r->right;
 			return iterator(r,dummy);
 		}
 	public:
@@ -326,10 +321,13 @@ public:
 	iterator end() const noexcept { return iterator(dummy, dummy);  }
 
 	reverse_iterator rbegin() const	noexcept { return reverse_iterator(iterator(dummy,dummy)); }
-	reverse_iterator rend() const noexcept { return reverse_iterator(iterator(dummy->left, dummy)); }
+	reverse_iterator rend() const noexcept { return reverse_iterator(iterator(dummy->left,dummy)); }
 
 	Binary_Search_Tree(Compare comparator = Compare(), AllocType alloc = AllocType())
-		: dummy(make_dummy()), cmp(comparator), Alc(alloc) {}
+		: cmp(comparator), Alc(alloc) 
+	{
+		dummy = make_dummy();
+	}
 
 	Binary_Search_Tree(std::initializer_list<T> il) : dummy(make_dummy())
 	{
@@ -357,27 +355,25 @@ public:
 	template <class InputIterator>
 	Binary_Search_Tree(InputIterator first, InputIterator last, Compare comparator = Compare(), AllocType alloc = AllocType()) : dummy(make_dummy()), cmp(comparator), Alc(alloc)
 	{
-		using IteratorCategory = typename std::iterator_traits<InputIterator>::iterator_category;
+		//using IteratorCategory = typename std::iterator_traits<InputIterator>::iterator_category;
 
-		//if constexpr (std::is_same_v<IteratorCategory, std::random_access_iterator_tag>) {
-		//	// Если итератор произвольного доступа, используем ordered_insert
-		//	ordered_insert(first, last, end());
+		////if constexpr (std::is_same_v<IteratorCategory, std::random_access_iterator_tag>) {
+		////	// Если итератор произвольного доступа, используем ordered_insert
+		////	ordered_insert(first, last, end());
+		////}
+		////else 
+		//if constexpr (std::is_same_v<IteratorCategory, std::bidirectional_iterator_tag>) {
+		//	auto base_first = first.base();
+		//	auto base_last = last.base();
+		//	while (base_first != base_last) {
+		//		insert(*base_first);
+		//		++base_first;
+		//	}
 		//}
 		//else 
-		if constexpr (std::is_same_v<IteratorCategory, std::bidirectional_iterator_tag>) {
-			// Если итератор двунаправленный (включая reverse_iterator), преобразуем его
-			auto base_first = first.base();
-			auto base_last = last.base();
-			while (base_first != base_last) {
-				insert(*base_first);
-				++base_first;
-			}
-		}
-		else 
-		{
-			// Для остальных типов итераторов используем последовательную вставку
+		//{
 			std::for_each(first, last, [this](const T& x) { insert(x); });
-		}
+		//}
 	}
 
 	Binary_Search_Tree(const Binary_Search_Tree & tree) : dummy(make_dummy())
@@ -389,14 +385,33 @@ public:
 		dummy->parent->parent = dummy;
 
 		//  Осталось установить min и max
-		Node* r = dummy->parent->right;
-		Node* l = dummy->parent->left;
-		while (r->right != dummy) r = r->right;
-		while (l->left != dummy) l = l->left;
-		
-		dummy->left = l;
-		dummy->right = r;
+		dummy->left = iterator(dummy->parent,dummy).GetMin()._data();
+		dummy->right = iterator(dummy->parent,dummy).GetMax()._data();
 	}
+
+	//Binary_Search_Tree(Binary_Search_Tree&& other): dummy(other.dummy), tree_size(other.tree_size), cmp(std::move(other.cmp)), Alc(std::move(other.Alc)) {
+	//	
+	//	other.dummy = make_dummy();  
+	//	other.tree_size = 0;         
+	//}
+
+	//Binary_Search_Tree& operator=(Binary_Search_Tree&& other) 
+	//{
+	//	if (this != &other) {
+	//		
+	//		clear();
+	//		delete_dummy(dummy);
+
+	//		dummy = other.dummy;
+	//		tree_size = other.tree_size;
+	//		cmp = std::move(other.cmp);
+	//		Alc = std::move(other.Alc);
+
+	//		other.dummy = make_dummy();
+	//		other.tree_size = 0;
+	//	}
+	//	return *this;
+	//}
 
 	private:
 
@@ -830,6 +845,7 @@ template <class Key, class Compare, class Allocator>
 bool operator<=(const Binary_Search_Tree<Key, Compare, Allocator>& x, const Binary_Search_Tree<Key, Compare, Allocator>& y) {
 	return   !(y < x);
 }
+
 
 
 
