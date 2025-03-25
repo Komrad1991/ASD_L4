@@ -602,7 +602,7 @@ public:
 			dummy->color = true;
 			dummy->parent->color = true;
 		}
-		std::cout << "RotatesNum: " << rotateCount << std::endl;
+		//std::cout << "RotatesNum: " << rotateCount << std::endl;
 	}
 
 	void fixDelete(Node* x) 
@@ -680,7 +680,7 @@ public:
 			}
 		}
 		x->color = true;
-		std::cout << "RotatesNum: " << rotateCount << std::endl;
+		//std::cout << "RotatesNum: " << rotateCount << std::endl;
 	}
 
 	void rightRotate(Node* node)

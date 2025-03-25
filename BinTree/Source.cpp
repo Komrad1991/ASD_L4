@@ -8,8 +8,12 @@
 #include <random>
 #include "BStree.h"
 #include <windows.h>
+#include <vector>
+#include <chrono>
+#include <time.h>
 
 using namespace std;
+using namespace std::chrono;
 
 template<typename InputIter>
 void print(InputIter first, InputIter last) {
@@ -32,9 +36,9 @@ int main() {
 	const size_t sz = 15;
 	vector<int> v;
 	v.reserve(sz);
-	std::random_device rd;  
-	std::mt19937 gen(rd()); 
-	std::uniform_int_distribution<> dis(0,+1000);
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<> dis(0, +1000);
 	generate_n(back_inserter(v), sz, [&]() {return (dis(gen) % 5000); });
 	sort(v.begin(), v.end());
 	cout << "\n -------------------------------- \n";
@@ -175,6 +179,119 @@ int main() {
 			Binary_Search_Tree<std::string> v3 = uploadFromFile("2.txt");
 			std::cout << "v3 tree" << std::endl;
 			v3.printTree();
+		}
+	}
+	cout << " -------------------------------- \n";
+	{
+		std::cout << "TIME MESURE: " << std::endl;
+		std::vector<long long> nums;
+		std::uniform_int_distribution<> dis2(1000, 1000000);
+		for (int i = 0; i < 100000; i++)
+		{
+			nums.push_back(dis2(gen));
+		}
+		{
+			long long duration = 0;
+			for (int i = 0; i < 100; i++)
+			{
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				Binary_Search_Tree<long long> myMultiSet;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					myMultiSet.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "myMultiSet insert time: " << duration / 100 << std::endl;
+		}
+		{
+			long long duration = 0;
+			for (int i = 0; i < 100; i++)
+			{
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				multiset<long long> standart;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					standart.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "multiSet insert time: " << duration / 100 << std::endl;
+		}
+		{
+			long long duration = 0;
+			for (int i = 0; i < 100; i++)
+			{
+				Binary_Search_Tree<long long> myMultiSet;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					myMultiSet.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				myMultiSet.clear();
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "myMultiSet clear time: " << duration / 100 << std::endl;
+		}
+		{
+			long long duration = 0;
+			for (int i = 0; i < 100; i++)
+			{
+				multiset<long long> standart;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					standart.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				standart.clear();
+				
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "multiSet clear time: " << duration / 100 << std::endl;
+		}
+		auto copy = nums;
+		std::random_shuffle(copy.begin(), copy.end());
+		{
+			long long duration = 0;
+			for (int i = 0; i < 3; i++)
+			{
+				Binary_Search_Tree<long long> myMultiSet;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					myMultiSet.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				for (int k = 0; k < copy.size()/4; k++)
+				{
+					myMultiSet.erase(copy[k]);
+				}
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "myMultiSet erase time: " << duration / 3 << std::endl;
+		}
+		{
+			long long duration = 0;
+			for (int i = 0; i < 3; i++)
+			{
+				multiset<long long> standart;
+				for (int j = 0; j < nums.size(); j++)
+				{
+					standart.insert(nums[i]);
+				}
+				high_resolution_clock::time_point t1 = high_resolution_clock::now();
+				for (int k = 0; k < copy.size()/4; k++)
+				{
+					standart.erase(copy[k]);
+				}
+				high_resolution_clock::time_point t2 = high_resolution_clock::now();
+				duration += std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+			}
+			std::cout << "multiSet erase time: " << duration / 3 << std::endl;
 		}
 	}
 	#ifdef _WIN32
