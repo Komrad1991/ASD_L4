@@ -43,6 +43,8 @@ int main() {
 	set<int> bb(v.begin(), v.end());
 	print(bb.begin(), bb.end());
 	Binary_Search_Tree<int> bst({ 40,50,30,35,10,75,23,87,68 });
+	Binary_Search_Tree<int> bst3({ 40,50,30,35,10,75,23,87,68 });
+	std::cout<< "equal first: " << (bst == bst3) << std::endl;
 	Binary_Search_Tree<int> bst2(bst.rend(), bst.rbegin());
 
 	auto b = bst2.begin();
@@ -53,7 +55,7 @@ int main() {
 		++b;
 	}
 	std::cout << std::endl;
-	cout << (bst == bst2) << endl;
+	cout <<"Equal: " << (bst == bst2) << endl;
 	//char carr[] = "abc", carr2[] = "def";
 	//Binary_Search_Tree<char> v0;
 	//auto pib = v0.insert('d');
@@ -134,9 +136,6 @@ int main() {
 		}
 		std::cout << std::endl;
 	}
-
-
-
 	std::cout << "4: " << (v1 == v0 && !(v0 < v1)) << std::endl;
 	std::cout << "5: " << (!(v0 != v1)) << std::endl;
 	std::cout << "6: " << (v0 <= v1 && v1 >= v0) << std::endl;

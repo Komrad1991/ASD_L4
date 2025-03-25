@@ -28,8 +28,8 @@ namespace TreeTest
 		//  Для того, чтобы выполнить тестирование одного из указанных контейнеров (std::set или Binary_Tree_Search)
 		//    должна быть раскомментирована одна из следующих строк:
 		
-		template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
-		//template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
+		//template<typename T> using ContainerTemplate = std::set<T, Mypred<T>, Myal<T>>;
+		template<typename T> using ContainerTemplate = Binary_Search_Tree<T, Mypred<T>, Myal<T>>;
 
 		TEST_METHOD(TreeSizeTest)
 		{
@@ -42,7 +42,7 @@ namespace TreeTest
 			Assert::AreEqual(Tree.size(), Tree2.size(), L"Неверно указывается размер после копирования!");
 		}
 
-		TEST_METHOD(TreesEqualityTest)
+		TEST_METHOD(TreesEqualityTest) //спросить
 		{
 			//  Тестирование оператора == для дерева
 			ContainerTemplate<int> T1, T2;
@@ -200,7 +200,7 @@ namespace TreeTest
 			Assert::IsTrue(v0.empty());
 			v0.swap(v1);
 			Assert::IsTrue(!v0.empty() && v1.empty());
-			ошибкаv0.swap(v1);
+			std::swap(v0, v1); //спросить
 			Assert::IsTrue(v0.empty() && !v1.empty());
 			Assert::IsTrue(v1 == v1 && v0 < v1, L"Сравнение множеств некорректно!");
 			Assert::IsTrue(v0 != v1 && v1 > v0, L"Сравнение множеств некорректно!");
@@ -226,6 +226,8 @@ namespace TreeTest
 			std::pair<Mycont::const_iterator, Mycont::const_iterator> pcc = v4.equal_range('a');
 			Assert::IsTrue(*pcc.first == 'a' && *pcc.second == 'b', L"Ошибка метода equal_range");
 		}
+
+		
 	};
 
 	TEST_CLASS(MultiSetTests)
@@ -482,6 +484,57 @@ namespace TreeTest
 				Assert::IsTrue(Elem::count() - init_count == 4, L"Неправильно работает удаление несуществующих элементов");
 			}
 			Assert::IsTrue(Elem::count() - init_count == 0, L"Утечка памяти!!");
+		}
+	};
+	TEST_CLASS(MyTests)
+	{
+		TEST_METHOD(find_exists)
+		{
+			Binary_Search_Tree<int> tree{ 1,2,3,4,5 };
+			auto iter = std::find(tree.begin(), tree.end(), 3);
+			Assert::IsTrue(*iter == 3);
+		}
+
+		TEST_METHOD(find_notExists)
+		{
+			Binary_Search_Tree<int> tree{ 1,2,3,4,5 };
+			auto iter2 = std::find(tree.begin(), tree.end(), 6);
+			Assert::IsTrue(iter2 == tree.end());
+		}
+
+		TEST_METHOD(find_empty)
+		{
+			Binary_Search_Tree<int> tree;
+			auto iter2 = std::find(tree.begin(), tree.end(), 6);
+			Assert::IsTrue(iter2 == tree.end());
+		}
+
+		TEST_METHOD(count_if_one)
+		{
+			Binary_Search_Tree<int> tree{ 1,2,3,4,5,5 };
+			int test1 = std::count_if(tree.begin(), tree.end(), [](int i) { return i == 1; });
+			Assert::IsTrue(test1 == 1);
+		}
+
+		TEST_METHOD(count_if_zero)
+		{
+			Binary_Search_Tree<int> tree{ 1,2,3,4,5,5 };
+			int test1 = std::count_if(tree.begin(), tree.end(), [](int i) { return i == 0; });
+			Assert::IsTrue(test1 == 0);
+		}
+
+		TEST_METHOD(count_if_many)
+		{
+			Binary_Search_Tree<int> tree{ 1,2,3,4,5,5 };
+			int test1 = std::count_if(tree.begin(), tree.end(), [](int i) { return i >= 3 ; });
+			Assert::IsTrue(test1 == 3);
+		}
+
+		TEST_METHOD(count_if_empty)
+		{
+			Binary_Search_Tree<int> tree;
+			int test1 = std::count_if(tree.begin(), tree.end(), [](int i) { return i == 5; });
+			Assert::IsTrue(test1 == 0);
 		}
 	};
 }
